@@ -26,14 +26,13 @@ In case of accidental and unwanted change in `configuration.ini`, Users can call
   
 
 ## Requirements
-Install the packages in requirements.txt
+Install the packages in requirements/requirements.txt
 ```bash
 pip install -r requirements.txt
 ```
-Clone the repository `patient-similarity-argo` next to the current directory, or change the corresponding paths in `configuration.ini`.
-
+Or use the conda package list available in `requirements/env.yml`
 ```bash
-git clone https://github.research.chop.edu/arcus/patient-similarity-argo.git
+conda env create -f env.yml
 ```
 
 ## Usage
