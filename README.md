@@ -1,6 +1,10 @@
 
-# phenotype-representation
-The goal of this project is to learn phenotype representation with vector embedding by applying a graph representation learning algorithm, i.e., [Node2Vec](https://dl.acm.org/doi/abs/10.1145/2939672.2939754), on the Human Phenotype Ontology (HPO) Directed Acyclic Graph (DAG).
+# Phenotype Embedding using graph representation learning
+The goal of this project is to learn phenotype representation with vector embedding by applying a graph representation learning algorithm, i.e., [Node2Vec](https://dl.acm.org/doi/abs/10.1145/2939672.2939754), on the Human Phenotype Ontology (HPO) Directed Acyclic Graph (DAG). Here, we present a novel approach to phenotype representation by incorporating phenotypic frequencies based on 53 million full-text health care notes from more than 1.5 million individuals. We demonstrate the efficacy of our proposed phenotype embedding technique by comparing our work to existing phenotypic similarity-measuring methods. Using phenotype frequencies in our embedding technique, we are able to identify phenotypic similarities that surpass current computational models. Furthermore, our embedding technique exhibits a high degree of agreement with domain experts' judgment. By transforming complex and multidimensional phenotypes from the HPO format into vectors, our proposed method enables efficient representation of these phenotypes for downstream tasks that require deep phenotyping. This is demonstrated in a patient similarity analysis and can further be applied to disease trajectory and risk prediction.
+
+The preprint is available on bioRxiv:
+- Daniali, M., Galer, P. D., Lewis-Smith, D., Parthasarathy, S., Kim, E., Salvucci, D. D., ... & Helbig, I. (2022). Enriching Representation Learning Using 53 Million Patient Notes through Human Phenotype Ontology Embedding. [bioRxiv](https://www.biorxiv.org/content/10.1101/2022.07.20.500809.abstract).
+
 
 Given an input graph <img  src="https://render.githubusercontent.com/render/math?math=G =(V,E)">, where <img src="https://render.githubusercontent.com/render/math?math=V"> is a set of vertices (also known as nodes) and <img src="https://render.githubusercontent.com/render/math?math=E"> is a set of edges, the Node2Vec algorithm finds an embedding space to map the nodes based on their neighborhood connectivity. In doing so, Node2Vec:
 
