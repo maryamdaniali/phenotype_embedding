@@ -1,13 +1,13 @@
 '''
 This module loads and resets configurations stored in configuration.ini, including paths, global variables, etc.
 '''
-
+import os
 from datetime import datetime
 import shutil
 from pathlib import Path
 import configparser
 from configparser import ConfigParser, ExtendedInterpolation
-CONFIG_PATH = './configuration.ini'
+CONFIG_PATH = 'scripts/configuration.ini'
 
 
 class Config():
@@ -27,30 +27,44 @@ class Config():
             with open(config_path) as file:
                 config.read_file(file)
         except IOError as exp:
-            raise ValueError("Failed to open/find all config files") from exp
+            raise ValueError("Failed to open/find config file") from exp
 
-        #load paths
+        # Load parameters
         self.params = {}
         for section in config.sections():
             for var_name, var_value in config.items(section):
                 if section == 'Node2Vec':
                     if var_name in ['p', 'q', 'learning_rate']:
-                        var_value = float(var_value)
-
+                        try:
+                            var_value = float(var_value)
+                        except ValueError:
+                            raise ValueError(f"Expected a float for {var_name}, got {var_value}")
                     elif var_name in ['extended']:
-                        var_value = (var_value.lower() == 'true')
-
+                        var_value = var_value.lower()
+                        if var_value not in ['true', 'false']:
+                            raise ValueError(f"Expected 'true' or 'false' for {var_name}, got {var_value}")
+                        var_value = (var_value == 'true')
+                    elif var_name in ['weight_system']:
+                        valid_weight_systems = ['equal', 'probabilistic', 'probabilistic_with_bias', 'random']
+                        if var_value not in valid_weight_systems:
+                            raise ValueError(f"Invalid value for {var_name}: {var_value}. Expected one of {valid_weight_systems}")
                     else:
-                        var_value = int(var_value)
-                elif var_value.lower() == 'true':
-                    var_value = True
-                elif var_value.lower() == 'false':
-                    var_value = False
-
-                elif not var_value or var_value=='None':
+                        try:
+                            var_value = int(var_value)
+                        except ValueError:
+                            raise ValueError(f"Expected an integer for {var_name}, got {var_value}")
+                # Validate paths and file names, support Unix and Windows
+                elif 'file' in  var_name or  'path' in var_name or 'dir' in var_name:
+                    var_value = Path(var_value).resolve()     
+                # General boolean checks
+                elif var_value.lower() in ['true', 'false']:
+                    var_value = (var_value.lower() == 'true')
+                # Handle None values
+                elif not var_value or var_value == 'None':
                     var_value = None
+                # Assign validated value
                 self.params[var_name] = var_value
-    def reset(self,config_path = './configuration.ini'):
+    def reset(self,config_path = CONFIG_PATH):
         """ Reset configuration parameters by first
         creating a backup file and then
         writing the default values to the file and loading them
@@ -58,7 +72,7 @@ class Config():
 
         Keyword Arguments:
             config_path {str} -- path to the config file
-                                 (default: {'./configuration.ini'})
+                                 (default: {'scripts/configuration.ini'})
         """
 
         Config.backup_config(config_path)
@@ -68,7 +82,7 @@ class Config():
 
     @staticmethod
     def rewrite_config(config_path):
-        """ Write default values to the configuration file
+        """ Write default values to the configuration.ini file
 
             Keyword Arguments:
             config_path {str} -- path to the config file
@@ -76,38 +90,55 @@ class Config():
         config = configparser.ConfigParser()
         curr_dir = Path('.').absolute()
 
-        config['Paths'] = { 'curr_dir': str(curr_dir),
-                            'patient_similarity_repo_path': str(curr_dir.parent),
-                            'scripts_path': str(curr_dir.parent/'patient-similarity-argo'/'scripts'),
-                            'hpo_filename': 'hpo_06_08_2020.obo',
-                            'hpo_file': str(curr_dir.parent/'patient-similarity-argo'/'data'/'hpo_06_08_2020.obo'),
-                            'save_path': str(curr_dir/'saved_data') }
+        if curr_dir.name == 'scripts':
+            # adjust path if script is running from the 'scripts' directory
+            project_dir = curr_dir.parent
+        else:
+            project_dir = curr_dir
 
-        config['DAG_Properties'] = {'prune': 'False',
-                                    'patients_table_name': 'lab.subset',
-                                    'filter_notes': 'False',
-                                    'load_saved_dag': 'False',
-                                    'dag_filename': str(curr_dir/'saved_data'/'dag_table_lab.subset_pruned_False_hpo_06_08_2020.obo')
-                                    }
-
-        config['Node2Vec'] = {'p' : '1',
+        config['Node2Vec'] = {
+                            '; note1': 'parameters of biased random walks',
+                            'p' : '1',
                             'q' :'0.05',
                             'num_walks' : '10',
                             'num_steps' : '5',
                             'vector_length' : '128',
                             'batch_size' : '1024',
+                            '; note2': 'parameters of the skip-gram model',
                             'learning_rate' : '0.001',
-                            'num_epochs': '15',
+                            'num_epochs': '50',
                             'num_negative_samples' : '4',
-                            'extended':'False'
+                            '; note3': 'to apply node2vec+ put True',
+                            'extended':'False',
+                            '; note4': 'weight system use equal, probabilistic, probabilistic_with_bias, or random',
+                            'weight_system' : 'equal'
+                            }    
 
-                            }
-        config['Saved_Files'] = {'load_saved_files' : 'True',
-                                'hpo_graph_filename': str(curr_dir/'saved_data'/'hpo_graph'),
-                                'hpo_embeddings_filename'  :  str(curr_dir/'saved_data'/'hpo_embeddings'),
-                                'dict_hpo_filename'  :  str(curr_dir/'saved_data'/'dict_hpo'),
-                                'vocabulary_lookup_filename'  :  str(curr_dir/'saved_data'/'vocabulary_lookup'),
-                                'vocabulary_filename'  :  str(curr_dir/'saved_data'/'vocabulary')
+        config['Paths'] = { 'main_dir': str(project_dir),
+                            'hpo_filename': 'hp-2020-10-12.obo',
+                            'hpo_path': "${main_dir}/data/${hpo_filename}",
+                            'save_path': "${main_dir}/results/weights_${Node2Vec:weight_system}_extended_${Node2Vec:extended}",
+                            'frequecy_filename': 'Table_S2.csv',
+                            'frequecy_file': "${main_dir}/data/${frequecy_filename}",
+                             }
+                            
+
+
+        config['DAG_Properties'] = {
+                                    '; note5': 'to generate the dag for the first time, put False',
+                                    'load_saved_dag': 'False',
+                                    'dag_filename': "${Paths:save_path}/dag_freq_${Paths:frequecy_filename}_HPO_${Paths:hpo_filename}"
+                                    }
+
+
+        config['Saved_Files'] = {
+                                '; note6': ' put True to load previously saved files for the weight_system, hpo_filename, and frequency_file combination, including hpo_graph, hpo_embeddings, dict_hpo, vocabulary_lookup, vocabulary.',
+                                'load_saved' : 'False',
+                                'hpo_graph_filename': "${Paths:save_path}/hpo_graph",
+                                'hpo_embeddings_filename'  :  "${Paths:save_path}/hpo_embeddings",
+                                'dict_hpo_filename'  :  "${Paths:save_path}/dict_hpo",
+                                'vocabulary_lookup_filename'  :  "${Paths:save_path}/vocabulary_lookup",
+                                'vocabulary_filename'  :  "${Paths:save_path}/vocabulary"
                                 }
 
         with open(config_path, 'w') as configfile:
@@ -120,11 +151,14 @@ class Config():
         Arguments:
             config_path {string} -- configuration file path
         """
-        original_filename = config_path.split('/')[-1]
-        path_components = config_path.split('/')[:-1]
-        path_org_file = '.' if not path_components else ''.join(path_components)
-        backup_filename = path_org_file + '/backup_'+\
-                        datetime.now().strftime("%Y-%m-%d_%H%M%S") +\
-                        '_'+ original_filename
-        shutil.copy(original_filename,backup_filename)
+        original_filename = os.path.basename(config_path)
+        path_org_file = os.path.dirname(config_path)
 
+        
+        backup_path = os.path.join(path_org_file, 'configuration_bk')
+        os.makedirs(backup_path, exist_ok=True)
+        timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        backup_file = os.path.join(backup_path,f"bk_{timestamp}_{original_filename}")
+
+        shutil.copy(config_path, backup_file)
+        print(f"Backup configuration.ini created: {backup_file}")
