@@ -15,9 +15,8 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-
-import config
-params = config.Config().params
+from scripts.config import Config
+params = Config().params
 
 
 default_params = { 'p':1, 'q':0.05 ,'num_walks':10, 'num_steps':5,
@@ -390,7 +389,7 @@ class Node2Vec():
 
 
         self.graph_embeddings = model.get_layer("item_embeddings").get_weights()[0]
-        print('Graph embeddings created')
+        print('Graph embeddings created.')
 
         if save_file:
             self.save_data()
@@ -405,7 +404,7 @@ class Node2Vec():
         plt.plot(history.history["loss"])
         plt.ylabel("loss")
         plt.xlabel("epoch")
-        plt.savefig(params['save_path']+'/model_loss.png')
+        plt.savefig(str(params['save_path']/'model_loss.png'))
 
     def save_data(self):
         """ A helper function to save files required to run load the saved model
@@ -419,18 +418,18 @@ class Node2Vec():
                          }
 
         for filename, file in dict_file_name.items():
-            with open(str(params['save_path'] + '/' + filename), 'wb') as outfile:
+            with open(os.path.join(params['save_path'], filename), 'wb') as outfile:
                 pickle.dump(file,outfile)
             outfile.close()
-        print('Data files saved in '+ params['save_path'])
+        print('Data files saved in ', params['save_path'])
 
 
         with open(os.path.join(self.log_dir, 'used_config.txt'), 'w') as file_cofig:
             print(params, file=file_cofig)
-        print('Config file saved in '+ self.log_dir)
+        print('Config file saved in ', self.log_dir)
 
 
-    def load_saved_files(self):
+    def load_saved(self):
         """ A helper function to load saved files required to run the model
         """
         self.graph = load_pickle(params['hpo_graph_filename'])
@@ -439,7 +438,7 @@ class Node2Vec():
         self.vocabulary_lookup = load_pickle(params['vocabulary_lookup_filename'])
         self.vocabulary= load_pickle(params['vocabulary_filename'])
         self.model = tf.keras.models.load_model(os.path.join(params['save_path'], self.model_name))
-        print("Loading saved files done")
+        print("Loading saved files done.")
 
 
     def save_embeddings(self):
@@ -461,7 +460,7 @@ class Node2Vec():
         hpo_weights= tf.Variable(self.model.get_layer('item_embeddings').get_weights()[0][1:])
         checkpoint = tf.train.Checkpoint(embedding=hpo_weights)
         checkpoint.save(os.path.join(self.log_dir, 'embedding.ckpt'))
-        print(f'Checkpoints saved in {self.log_dir}')
+        print(f'Checkpoints are saved in {self.log_dir}')
 
 
     def get_batch_embeddings(self, list_node_ids):

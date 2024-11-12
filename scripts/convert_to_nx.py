@@ -4,11 +4,12 @@
 Returns:
     netwrokx graph -- a graph of type nx
 """
+import os
 import pickle
 import random
 import networkx as nx
-import config
-params = config.Config().params
+from scripts.config import Config
+params = Config().params
 
 
 
@@ -49,7 +50,7 @@ class NxGraph():
     def save_graph(self):
         """Save nx graph in a pickle file
         """
-        filename = params['save_path']+'/nx_graph'
+        filename = os.path.join(params['save_path'],'/nx_graph')
         print('Saving nx_graph:',filename)
         with open(filename,'wb') as outfile:
             pickle.dump(self.graph, outfile)
@@ -66,7 +67,7 @@ class NxGraph():
         Returns:
             list of tuple -- each tuple contains node key and other properties including
                             name,
-                            cnt (frequency),
+                            # cnt (frequency), ## remove
                             prob (of the node),
                             prob_descendants (probability of its descendants)
         """
@@ -76,7 +77,7 @@ class NxGraph():
             node = self.dag.__getitem__(curr_node)
 
             nodes_list.append((node.key,{"name": node.name,
-                                        "cnt": node.cnt,
+                                        # "cnt": node.cnt, ##remove
                                         'prob':node.prob,
                                         'prob_descendants': node.prob_descendants}))
         return nodes_list

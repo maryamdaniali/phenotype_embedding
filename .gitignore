@@ -1,0 +1,10 @@
+.vscode/
+.ipynb_checkpoints/
+scripts/__pycache__/
+scripts/configuration_bk/*
+results/
+
+
+# exclude these
+!scripts/configuration_bk/template_configurations/
+!scripts/configuration_bk/template_configurations/**
